@@ -1,28 +1,65 @@
 - [1. Elasticsearch?](#1-elasticsearch)
-    - [용어정리](#용어정리)
+		- [용어정리](#용어정리)
 - [2. Elasticsearch 시작하기](#2-elasticsearch-시작하기)
-  - [1) 설치 및 실행](#1-설치-및-실행)
-    - [실행 옵션](#실행-옵션)
-    - [쉘스크립트를 사용해 데몬으로 실행하는 파일 만들기](#쉘스크립트를-사용해-데몬으로-실행하는-파일-만들기)
-  - [2) Elasticsearch 환경설정](#2-elasticsearch-환경설정)
-    - [환경설정방법](#환경설정방법)
+	- [1) 설치 및 실행](#1-설치-및-실행)
+		- [실행 옵션](#실행-옵션)
+		- [쉘스크립트를 사용해 데몬으로 실행하는 파일 만들기](#쉘스크립트를-사용해-데몬으로-실행하는-파일-만들기)
+	- [2) Elasticsearch 환경설정](#2-elasticsearch-환경설정)
+		- [환경설정방법](#환경설정방법)
 - [3. Elasticsearch 시스템 구조](#3-elasticsearch-시스템-구조)
-  - [1) 클러스터 구성](#1-클러스터-구성)
-    - [하나의 서버에서 여러 클러스터 실행](#하나의-서버에서-여러-클러스터-실행)
-    - [디스커버리(Discovery)](#디스커버리discovery)
-  - [2) 인덱스와 샤드](#2-인덱스와-샤드)
-    - [프라이머리샤드(Primary Shard)와 복제본(Replica)](#프라이머리샤드primary-shard와-복제본replica)
-    - [샤드 개수 설정](#샤드-개수-설정)
-  - [3) 마스터노드와 데이터노드](#3-마스터노드와-데이터노드)
-    - [마스터노드(Master Node)](#마스터노드master-node)
-    - [데이터노드(Data Node)](#데이터노드data-node)
-    - [Split Brain](#split-brain)
+	- [1) 클러스터 구성](#1-클러스터-구성)
+		- [하나의 서버에서 여러 클러스터 실행](#하나의-서버에서-여러-클러스터-실행)
+		- [디스커버리(Discovery)](#디스커버리discovery)
+	- [2) 인덱스와 샤드](#2-인덱스와-샤드)
+		- [프라이머리샤드(Primary Shard)와 복제본(Replica)](#프라이머리샤드primary-shard와-복제본replica)
+		- [샤드 개수 설정](#샤드-개수-설정)
+	- [3) 마스터노드와 데이터노드](#3-마스터노드와-데이터노드)
+		- [마스터노드(Master Node)](#마스터노드master-node)
+		- [데이터노드(Data Node)](#데이터노드data-node)
+		- [Split Brain](#split-brain)
 - [4. Elasticsearch 데이터 처리](#4-elasticsearch-데이터-처리)
-  - [1) REST API](#1-rest-api)
-    - [REST API 설명](#rest-api-설명)
-    - [유닉스 curl](#유닉스-curl)
-    - [Kibana Dev Tools](#kibana-dev-tools)
-  - [2) CRUD - 생성, 조회, 입력, 삭제](#2-crud---생성-조회-입력-삭제)
+	- [1) REST API](#1-rest-api)
+		- [REST API 설명](#rest-api-설명)
+		- [유닉스 curl](#유닉스-curl)
+		- [Kibana Dev Tools](#kibana-dev-tools)
+	- [2) CRUD - 생성, 조회, 입력, 삭제](#2-crud---생성-조회-입력-삭제)
+		- [입력(PUT)](#입력put)
+		- [조회(GET)](#조회get)
+		- [삭제(DELETE)](#삭제delete)
+		- [수정(POST)](#수정post)
+	- [3) 벌크 API - _bulk API](#3-벌크-api---_bulk-api)
+		- [파일에 저장한 내용 실행](#파일에-저장한-내용-실행)
+	- [4) 검색 API - _search API](#4-검색-api---_search-api)
+		- [URI 검색](#uri-검색)
+		- [데이터 본문(Data Body) 검색](#데이터-본문data-body-검색)
+		- [멀티테넌시](#멀티테넌시)
+- [5. 검색과 쿼리 - Query DSL](#5-검색과-쿼리---query-dsl)
+	- [1) 풀 텍스트 쿼리 (Full Test Query)](#1-풀-텍스트-쿼리-full-test-query)
+		- [match_all](#match_all)
+		- [match](#match)
+		- [match_phrase](#match_phrase)
+		- [query_string](#query_string)
+	- [2) Bool 복합 쿼리 - Bool Query](#2-bool-복합-쿼리---bool-query)
+	- [3) 정확도 - Relevancy](#3-정확도---relevancy)
+		- [스코어 (Score) 점수](#스코어-score-점수)
+		- [TF (Term Frequency)](#tf-term-frequency)
+		- [IDF (Inverse Document Frequency)](#idf-inverse-document-frequency)
+		- [Field Length](#field-length)
+	- [4) Bool: Should](#4-bool-should)
+	- [5) 정확값 쿼리 - Exact Valu Query](#5-정확값-쿼리---exact-valu-query)
+		- [bool: filter](#bool-filter)
+		- [keyword](#keyword)
+	- [6) 범위 쿼리 - Range Query](#6-범위-쿼리---range-query)
+		- [range](#range)
+		- [날짜 검색](#날짜-검색)
+- [6. 데이터 색인과 텍스트 분석](#6-데이터-색인과-텍스트-분석)
+	- [1) 역 인덱스 - Reverse Index](#1-역-인덱스---reverse-index)
+	- [2) 텍스트 분석 - Text Analysis](#2-텍스트-분석---text-analysis)
+	- [3) 애널라이저 - Analyser](#3-애널라이저---analyser)
+	- [4) 캐릭터 필터 - character Filter](#4-캐릭터-필터---character-filter)
+	- [5) 토크나이저 - Tokenizer](#5-토크나이저---tokenizer)
+	- [6) 토큰 필터 - Token Filter](#6-토큰-필터---token-filter)
+	- [7) 형태소 분석 - Stemming](#7-형태소-분석---stemming)
 
 
 ## 실습 환경
@@ -48,6 +85,7 @@
 - 검색 (search) : 인덱스에 들어있는 검색어 토큰들을 포함하고 있는 문서를 찾아가는 과정
 - 질의 (query) : 사용자가 원하는 문서를 찾거나 집계 결과를 출력하기 위해 검색 시 입력하는 **검색어 또는 검색 조건**
 
+**용어를 확실히 이해하고 넘어가야 한다!**
 
 # 2. Elasticsearch 시작하기
 
@@ -349,4 +387,1010 @@ Elasticsearch의 도큐먼트는 각자 URI를 갖는다.
 
 `http://<호스트>:<포트>/<인덱스>/_doc/<도큐먼트 id>`
 
-구조
+```sh
+$ curl -XPUT "http://localhost:9200/my_index/_doc/1" -H 'Content-Type: application/json' -d'
+{
+  "name": "Jongmin Kim",
+  "message": "안녕하세요 Elasticsearch"
+}'
+```
+- 간단하게 my_index 인덱스에 도큐먼트 id가 1인 데이터를 입력하는 예제
+
+
+### 입력(PUT)
+
+실습은 Kibana의 Dev tools에서 한다.
+
+입력할 때는 **PUT 메소드** 사용
+```json
+PUT my_index/_doc/1
+{
+  "name":"Dogyun Kim",
+  "message":"안녕하세요 Elasticsearch"
+}
+```
+- Request
+
+```json
+{
+  "_index" : "my_index",
+  "_type" : "_doc",
+  "_id" : "1",
+  "_version" : 2,
+  "result" : "updated",
+  "_shards" : {
+    "total" : 2,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "_seq_no" : 1,
+  "_primary_term" : 1
+}
+```
+- Response
+- "result"가 처음 요청 시에는 create로 됐다가 두 번 요청 시 "updated"로 리턴된다.
+- 중복 입력 방지를 위해 요청 시 `PUT my_index/_create/1`로 하면 덮어쓰기를 방지할 수 있다.
+
+
+### 조회(GET)
+
+```json
+GET my_index/_doc/1
+```
+
+
+### 삭제(DELETE)
+
+도큐먼트 또는 인덱스 단위로 삭제 가능
+
+```json
+DELETE my_index/_doc/1
+```
+- 도큐먼트 삭제
+
+
+```json
+DELETE my_index
+```
+- 인덱스 삭제
+
+### 수정(POST)
+
+데이터 입력에도 사용 가능하다.
+
+```json
+POST my_index/_doc
+{
+  "name":"Dogyun Kim",
+  "message":"안녕하세요 Elasticsearch"
+}
+```
+- 도큐먼트 ID 없이 실행 시 랜덤 ID가 부여된다.
+
+**원하는 필드만 수정하기**
+```json
+POST my_index/_update/1
+{
+  "doc": {
+    "message": "안녕따리"
+  }
+}
+
+GET my_index/_doc/1
+```
+
+
+## 3) 벌크 API - _bulk API
+
+- 여러 명령을 한번에 수행하기 위해 벌크 API를 사용
+
+- index, create, update, delete 수행 가능
+
+> _bulk 의 명령문과 데이터문은 반드시 한 줄 안에 입력이 되어야 하며 줄바꿈을 허용하지 않음.
+
+
+```json
+POST _bulk
+{"index":{"_index":"test", "_id":"1"}}
+{"field":"value one"}
+{"index":{"_index":"test", "_id":"2"}}
+{"field":"value two"}
+{"delete":{"_index":"test", "_id":"2"}}
+{"create":{"_index":"test", "_id":"3"}}
+{"field":"value three"}
+{"update":{"_index":"test", "_id":"1"}}
+{"doc":{"field":"value two"}}
+```
+- 명령문 예시. 
+- 각 명령문의 결과는 items에 배열로 리턴됨.
+
+벌크 동작은 따로 동작하는 것 보다 빠르다. 그래서 대용량 데이터 처리 시 벌크 명령을 통해 사용하는게 오버헤드가 적다.
+
+Logstash, Beats는 데이터 입력 시 벌크 명령으로 수행함.
+
+
+### 파일에 저장한 내용 실행
+
+파일에 명령어 내용을 저장하고 `curl`명령어로 실행 가능.
+
+bulk.json
+```json
+{"index":{"_index":"test","_id":"1"}}
+{"field":"value one"}
+{"index":{"_index":"test","_id":"2"}}
+{"field":"value two"}
+{"delete":{"_index":"test","_id":"2"}}
+{"create":{"_index":"test","_id":"3"}}
+{"field":"value three"}
+{"update":{"_index":"test","_id":"1"}}
+{"doc":{"field":"value two"}}
+```
+
+실행
+```json
+$ curl -XPOST "http://localhost:9200/_bulk" -H 'Content-Type: application/json' --data-binary @bulk.json
+```
+- `--data-binary` 옵션을 추가해서 실행
+- 파일 이름 앞에는 `@`를 써야함
+
+
+## 4) 검색 API - _search API
+
+- 쿼리를 통한 검색기능이 짱이다.
+- 검색은 인덱스 단위로 
+- `GET 인덱스명/_serarch`
+
+### URI 검색
+
+- _search/뒤에 q 파라메터를 사용하여 검색가능
+
+
+```json
+GET test/_search?q=value
+```
+- test 인덱스에서 value 라는 값을 찾는 쿼리문
+
+```json
+{
+  "took" : 16,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 2,
+      "relation" : "eq"
+    },
+    "max_score" : 0.06453852,
+    "hits" : [
+      {
+        "_index" : "test",
+        "_type" : "_doc",
+        "_id" : "3",
+        "_score" : 0.06453852,
+        "_source" : {
+          "field" : "value three"
+        }
+      },
+      {
+        "_index" : "test",
+        "_type" : "_doc",
+        "_id" : "1",
+        "_score" : 0.06453852,
+        "_source" : {
+          "field" : "value two"
+        }
+      }
+    ]
+  }
+}
+```
+
+- `hits.total.value`에 보면 결과에 해당하는 문서 개수
+- `hits` 리스트에는 정확도가 가장 높은 문서 10개까지 보여줌.
+- `_score`는 Relevancy(랠러번시)라고 하는 정확도이다.
+
+
+### 데이터 본문(Data Body) 검색
+
+- 검색 쿼리를 본문에 입력하여 검색하는 방식
+- Elastic의 QueryDSL과 json을 사용
+
+
+간단하게 문법을 알아보기 위해 가장 많이 쓰이는 `match`를 사용해보쟈.
+```json
+GET test/_search
+{
+  "query": {
+    "match": {
+      "field": "value"
+    }
+  }
+}
+```
+- "field" 필드에서 검색어 "value" 검색
+- 쿼리 입력은 항상 "query" 지정자로 시작
+- 그다음 쿼리 종류 선택, 여기서는 "match"
+- 그다음 사용할 쿼리의 문법대로 명령어 입력. (쿼리마다 다름)
+- match 명령어의 문법은 `<필드명>:<검색어>`
+
+더 자세한 설명은 뒤에 함.
+
+### 멀티테넌시
+
+- 여러 개의 인덱스를 한꺼번에 묶어 검색할 수 있는 기능
+
+
+1. 쉼표로 나열해서 검색
+	```json
+	GET logs-2018-01,2018-02,2018-03/_search
+	```
+
+2. 와일드카드 `*`를 이용해서 검색
+	```json
+	GET logs-2018-*/_search
+	```
+
+3. 모든 인덱스 검색
+	```json
+	GET _all/_search
+	```
+
+# 5. 검색과 쿼리 - Query DSL
+
+- Elasticsearch는 검색어인 **Term**으로 분석 후 저장함.
+- 풀 텍스트 검색 
+- 검색을 위한 쿼리 기능. Query DSL (Domain Specific Language). **json 형식**으로!!
+
+
+## 1) 풀 텍스트 쿼리 (Full Test Query)
+
+- 정확도를 고려하여 검색결과 리턴!
+
+
+명령어 실습을 위해 예제인덱스 my_index에 도큐먼트 5개를 생성 후 시작!
+
+```json
+POST my_index/_bulk
+{"index":{"_id":1}}
+{"message":"The quick brown fox"}
+{"index":{"_id":2}}
+{"message":"The quick brown fox jumps over the lazy dog"}
+{"index":{"_id":3}}
+{"message":"The quick brown fox jumps over the quick dog"}
+{"index":{"_id":4}}
+{"message":"Brown fox brown dog"}
+{"index":{"_id":5}}
+{"message":"Lazy jumping dog"}
+```
+
+```
+The quick brown fox
+The quick brown fox jumps over the lazy dog
+The quick brown fox jumps over the quick dog
+Brown fox brown dog
+Lazy jumping dog
+```
+
+### match_all
+```json
+GET my_index/_search
+{
+  "query":{
+    "match_all":{ }
+  }
+}
+```
+- 해당 인덱스의 모든 도큐먼트를 검색!
+
+
+### match
+
+기본적인 검색 명령!
+
+
+```json
+GET my_index/_search
+{
+  "query": {
+	"match": {
+      "message": "dog"
+	}
+  }
+} 
+```
+- "dog" 이 포함된 도큐먼트 리턴!
+
+
+
+```json
+GET my_index/_search
+{
+  "query": {
+	"match": {
+      "message": "quick dog"
+	}
+  }
+}
+```
+- "quick" or "dog" 이 포함된 도큐먼트 리턴!
+- or 검색
+
+
+
+```json
+GET my_index/_search
+{
+  "query": {
+	"match": {
+      "message": "dog",
+	  "operator": "and"
+	}
+  }
+} 
+```
+- "operator"를 통해 and 검색 가능
+
+
+### match_phrase
+
+입력의 순서를 고려해서 입력어를 모두 포함하는 검색!
+
+```json
+GET my_index/_search
+{
+  "query": {
+	"match_phrase": {
+      "message": "quick dog"
+	}
+  }
+}
+```
+- 검색 결과 "quick dog"이 정확하게 포함된 도큐먼트 리턴
+
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "match_phrase": {
+      "message": {
+        "query": "lazy dog",
+        "slop": 1
+      }
+    }
+  }
+}
+```
+- `slop`을 통해 키워드 사이에 다른 단어 끼는 것 허용가능
+- 예를들어 slop 값이 1이면 "lazy jumping dog"같이 사이에 낀 단어가 있어도 리턴
+- 너무 큰 값은 정확도가 구려서 **1 이상은 비추**
+
+
+### query_string
+
+URI 검색을 하고싶을 때
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "query_string": {
+      "default_field": "message",
+      "query": "(jumping AND lazy) OR \"(quick dog)\""
+    }
+  }
+}
+```
+- "jumping"과 "lazy"를 포함한 도큐먼트 또는 "quick dog"을 포함한 도큐먼트가 리턴
+
+
+
+
+## 2) Bool 복합 쿼리 - Bool Query
+
+여러 쿼리를 통해 검색하기 위함!
+
+```json
+GET <인덱스명>/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { <쿼리> }, ...
+      ],
+      "must_not": [
+        { <쿼리> }, ...
+      ],
+      "should": [
+        { <쿼리> }, ...
+      ],
+      "filter": [
+        { <쿼리> }, ...
+      ]
+    }
+  }
+}
+```
+- must : 쿼리가 참인 도큐먼트들을 검색합니다. 
+- must_not : 쿼리가 거짓인 도큐먼트들을 검색합니다. 
+- should : 검색 결과 중 이 쿼리에 해당하는 도큐먼트의 점수를 높입니다. 
+- filter : 쿼리가 참인 도큐먼트를 검색하지만 스코어를 계산하지 않습니다. must 보다 검색 속도가 빠르고 캐싱이 가능합니다.
+
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "message": "quick"
+          }
+        },
+        {
+          "match_phrase": {
+            "message": "lazy dog"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+- 단어 "quick"과 구문 "lazy dog"이 포함된 도큐먼트 리턴
+
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        {
+          "match": {
+            "message": "quick"
+          }
+        },
+        {
+          "match_phrase": {
+            "message": "lazy dog"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+- 단어 "quick"과 구문 "lazy dog"이 포함되지 않은 도큐먼트 리턴
+
+
+
+## 3) 정확도 - Relevancy
+
+- RDBMS와 달리 Elasticsearch는 정확도(**Relevancy**)가 있어 원하는 것과 가장 유사한 결과를 맨 먼저 보여줌!
+- 언급할 때는 정확도보다 **랠러번시** 라고 읽는게 좋음
+
+
+### 스코어 (Score) 점수
+
+- BM25 알고리즘을 사용하여 검색결과가 조건에 얼마나 일치하는지 계산
+
+### TF (Term Frequency)
+구글에서 "쥬라기 공원" 이라는 검색어로 검색을 한다고 가정 해 보겠습니다. "쥬라기 공원"이라는 단어가 5번 들어 있는 웹 페이지 보다는 10번 들어있는 웹 페이지가 내가 보고싶어 하는 정보가 있는 페이지일 확률이 높을 것입니다. **도큐먼트 내에 검색된 텀(term)이 더 많을수록 점수가 높아지는 것을 Term Frequency** 라고 합니다.
+
+### IDF (Inverse Document Frequency)
+다시 구글에서 "쥬라기 공원" 이라는 검색어로 검색을 했을 때 "쥬라기" 또는 "공원" 중 어떤 단어든 포함하는 페이지들은 검색 결과에 나타날 수 있을 것입니다. 이 때 전체 검색 결과 중에 "쥬라기" 가 포함된 결과는 10개 "공원"이 포함된 결과는 100개 라고 가정한다면 흔한 단어인 "공원" 보다는 희소한 단어인 "쥬라기" 가 검색에 더 중요한 텀일 가능성이 높습니다. **검색한 텀을 포함하고 있는 도큐먼트 개수가 많을수록 그 텀의 자신의 점수가 감소하는 것을 Inverse Document Frequency** 라고 합니다.
+
+### Field Length
+
+검색조건을 포함한 문자열 길이에 따라 정확도가 달라진다. 문자열 길이가 긴 것보다(본문) 짧은 것(제목)에 있는 조건이 더 정확할 수 있다.
+
+```json
+GET my_index/_search
+{
+  "query": {
+	"match": {
+	  "message": "lazy"
+	}
+  }
+}
+```
+- 조건으로 검색하면 짧은 도큐먼트의 랠러번시가 더 크다.
+
+
+
+## 4) Bool: Should
+
+- 검색 **Score를 조정**할 수 있다.
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "match": {
+      "message": "fox"
+    }
+  }
+}
+```
+- 먼저 "fox"가 포함된 도큐먼트 검색 후 결과를 보면
+
+```json
+{
+  "took" : 0,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 4,
+      "relation" : "eq"
+    },
+    "max_score" : 0.6063718,
+    "hits" : [
+      {
+        "_index" : "my_index",
+        "_type" : "_doc",
+        "_id" : "1",
+        "_score" : 0.6063718,
+        "_source" : {
+          "message" : "The quick brown fox"
+        }
+      },
+      {
+        "_index" : "my_index",
+        "_type" : "_doc",
+        "_id" : "4",
+        "_score" : 0.6063718,
+        "_source" : {
+          "message" : "Brown fox brown dog"
+        }
+      },
+      {
+        "_index" : "my_index",
+        "_type" : "_doc",
+        "_id" : "2",
+        "_score" : 0.4120614,
+        "_source" : {
+          "message" : "The quick brown fox jumps over the lazy dog"
+        }
+      },
+      {
+        "_index" : "my_index",
+        "_type" : "_doc",
+        "_id" : "3",
+        "_score" : 0.4120614,
+        "_source" : {
+          "message" : "The quick brown fox jumps over the quick dog"
+        }
+      }
+    ]
+  }
+}
+```
+- "lazy"가 포함된 결과의 스코어를 올리고 싶다면
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "message": "fox"
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "message": "lazy"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+- should로 "lazy" 검색 추가 후 실행!
+
+```json
+GET my_index/_search
+{
+  "took" : 13,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 4,
+      "relation" : "eq"
+    },
+    "max_score" : 1.245081,
+    "hits" : [
+      {
+        "_index" : "my_index",
+        "_type" : "_doc",
+        "_id" : "2",
+        "_score" : 1.245081,
+        "_source" : {
+          "message" : "The quick brown fox jumps over the lazy dog"
+        }
+      },
+      {
+        "_index" : "my_index",
+        "_type" : "_doc",
+        "_id" : "1",
+        "_score" : 0.6063718,
+        "_source" : {
+          "message" : "The quick brown fox"
+        }
+      },
+      {
+        "_index" : "my_index",
+        "_type" : "_doc",
+        "_id" : "4",
+        "_score" : 0.6063718,
+        "_source" : {
+          "message" : "Brown fox brown dog"
+        }
+      },
+      {
+        "_index" : "my_index",
+        "_type" : "_doc",
+        "_id" : "3",
+        "_score" : 0.4120614,
+        "_source" : {
+          "message" : "The quick brown fox jumps over the quick dog"
+        }
+      }
+    ]
+  }
+}
+```
+- lazy가 포함된 도큐먼트의 스코어가 증가하여 상위로 올라감.
+
+
+**should는 math_phrase와 찰떡임**
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "message": "lazy dog"
+          }
+        }
+      ],
+      "should": [
+        {
+          "match_phrase": {
+            "message": "lazy dog"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+- "lazy" or "dog"을 검색하면서 "lazy dog"에 가중치를 더해줌!
+
+- 이렇게 같이 쓰면 장점 : 쇼핑몰 검색 시 "스키 장갑"을 검색 시 "스키"관련 용품도 좌라락 나오고 "장갑"관련 물건도 좌라락 나온다. 이 때 "스키 장갑"에 대한 것에 가중치를 주면 상위에 노출되게 할 수 있겠지. 여기서 `slop` 옵션에 1을 주면? "스키 보드 장갑", "스키 전용 장갑" 등 더 상세한 결과도 나올 수 있다!
+
+
+
+## 5) 정확값 쿼리 - Exact Valu Query
+
+- 풀 텍스트 검색과 달리 참/거짓만 판별하여 결과 리턴!
+
+### bool: filter
+
+- bool 쿼리의 filter 안에 쿼리를 사용하면 스코어에 영향 X
+- 즉 검색 조건에는 넣지만 스코어에는 영향을 주지 않는 제어가 필요할 때 사용
+
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "message": "fox"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "match": {
+            "message": "quick"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+GET my_index/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "message": "fox"
+          }
+        },
+        {
+          "match": {
+            "message": "quick"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+- 두 쿼리를 실행했을 때 결과 스코어가 다르게 나온다.
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "message": "fox"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "bool": {
+            "must_not": {
+              "match": {
+                "message": "dog"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+- "fox"는 포함하고 "dog"은 포함하지 않는 문서 검색
+- filter 내부에서 must_not 과 같은 다른 bool 쿼리를 포함하려면 filter 내부에 bool 쿼리를 먼저 넣고 그 안에 다시 must_not 을 넣어야 함
+- 스코어는 "fox"를 포함한 문서 검색 할 때와 같다. (dog은 있는 문서)
+
+
+### keyword
+
+- 문자열 데이터는 keyword형식으로 저장하여 정확값 검색 가능
+
+```json
+GET my_index/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "match": {
+            "message.keyword": "Brown fox brown dog"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+- 문자열, 공백, 대소문자까지 정확히 일치하는 문서 검색
+- keyword 타입으로 저장된 필드는 스코어를 계산하지 않고 정확값의 일치 여부만을 따지기 때문에 스코어가 `"_score" : 0.0` 으로 나오게 됩니다. 스코어를 계산하지 않기 때문에 keyword 값을 검색 할 때는 filter 구문 안에!!
+
+
+필터 안에 넣은 쿼리는 더 빠르게 실행되기 때문에, **스코어가 필요없는 쿼리는 필터로 실행하자!**
+
+
+## 6) 범위 쿼리 - Range Query
+
+- 숫자나 날짜 등을 범위로 검색가능!
+- 스코어가 없다. (해당 조건의 참/거짓만 판별하면 되기 때문)
+
+시작 전 예제 입력
+
+```json
+POST phones/_bulk
+{"index":{"_id":1}}
+{"model":"Samsung GalaxyS 5","price":475,"date":"2014-02-24"}
+{"index":{"_id":2}}
+{"model":"Samsung GalaxyS 6","price":795,"date":"2015-03-15"}
+{"index":{"_id":3}}
+{"model":"Samsung GalaxyS 7","price":859,"date":"2016-02-21"}
+{"index":{"_id":4}}
+{"model":"Samsung GalaxyS 8","price":959,"date":"2017-03-29"}
+{"index":{"_id":5}}
+{"model":"Samsung GalaxyS 9","price":1059,"date":"2018-02-25"}
+```
+
+### range
+
+- 범위 검색을 할 때는 range로 한다.
+
+`range: { <필드명> : { <파라메터> : <값> } }`
+
+| 파라메터 |        설명        |
+| :------: | :----------------: |
+|   gte    |  이상 (같거나 큼)  |
+|    gt    |     초과 (큼)      |
+|   lte    | 이하 (같거나 작음) |
+|    lt    |    미만 (작음)     |
+
+```json
+GET phones/_search
+{
+  "query": {
+    "range": {
+      "price": {
+        "gte": 700,
+        "lt": 900
+      }
+    }
+  }
+}
+```
+- 700 <= price < 900 검색하는 쿼리문
+
+
+### 날짜 검색
+
+- Elasticsearch에서 날짜는 **ISO8601형식**을 사용
+
+```json
+GET phones/_search
+{
+  "query": {
+    "range": {
+      "date": {
+        "gt": "2016-01-01"
+      }
+    }
+  }
+}
+```
+- 2016년 1월 1일 이후 생산된 휴대폰 문서 리턴
+
+
+`format`으로 쿼리의 포맷을 다르게 할 수 있다.
+
+```json
+GET phones/_search
+{
+  "query": {
+    "range": {
+      "date": {
+        "gt": "31/12/2015",
+        "lt": "2018",
+        "format": "dd/MM/yyyy||yyyy"
+      }
+    }
+  }
+}
+```
+
+
+`now`
+```json
+GET phones/_search
+{
+  "query": {
+    "range": {
+      "date": {
+        "gt": "2016-01-01||+6M",
+        "lt": "now-365d"
+      }
+    }
+  }
+}
+```
+- date의 값이 2016년 1월 1일에서 6개월 후인 날 부터 오늘보다 365일 전인 날 사이의 데이터를 가져오는 쿼리
+
+
+# 6. 데이터 색인과 텍스트 분석
+
+- 검색을 위해 텍스트 데이터를 어떻게 처리하고 데이터를 색인 할 때 Elasticsearch에서 어떤 과정이 이루어지는지
+
+## 1) 역 인덱스 - Reverse Index
+
+- 텀(Term) : 문서 내에 포함된 키워드를 텀이라고 부른다.
+- 역인덱스 구조 : 텀이 어떤 문서에 포함되어 있는지를 저장해놓은 것.
+
+|  텀   |      ID(문서)       |
+| :---: | :-----------------: |
+| Hello |      doc1 doc2      |
+|  The  |   doc2 doc4 doc5    |
+|  man  |      doc1 doc4      |
+|  is   | doc2 doc3 doc4 doc5 |
+- 역인덱스 구조
+
+| ID(문서) |     단어     |
+| :------: | :----------: |
+|   doc1   |  Hello man   |
+|   doc2   | Hello The is |
+|   doc3   |      is      |
+|   doc4   |  The man is  |
+|   doc5   |    The is    |
+- 인덱스 구조
+
+
+**검색이 빠르다!**
+
+
+
+## 2) 텍스트 분석 - Text Analysis
+
+- 텍스트를 저장하기 위해 그 전에 처리 과정을 거친다. (특수문자 제거, 공백제거, 대소문자 등등)
+- 이 과정이 **텍스트 분석**
+- 이를 수행하는 게 **애널라이저(분석기)**
+- 애널라이저 구성과 과정
+  
+	```
+	캐릭터 필터(0~3개) : 특정 문자를 대치하거나 제거 
+			↓ 
+	토크나이저(단 1개) : 문장에 속한 단어들을 텀 단위로 하나씩 분리 
+			↓ 
+	토큰 필터(0~n개) : 분리된 텀 들을 하나씩 가공
+	```
+
+- 특수문자 제거, 공백 제거, 대/소문자 변형, 불용어 제거, 형태소 변형(s, ~ing 등), 동의어 추가 등등..
+
+> 자세한 사항 : https://esbook.kimjmin.net/06-text-analysis/6.2-text-analysis
+
+
+## 3) 애널라이저 - Analyser
+- Elasticsearch에는 애널라이저를 조합하고 그 동작을 자세히 확인할 수 있는 API 들이 있다.
+
+
+
+
+
+
+## 4) 캐릭터 필터 - character Filter
+
+- 전체 문장에서 특정 문자를 대치하거나 제거
+
+
+## 5) 토크나이저 - Tokenizer
+- 문장에 속한 단어들을 텀 단위로 하나씩 분리
+
+
+
+## 6) 토큰 필터 - Token Filter
+
+- 분리된 텀 들을 하나씩 가공
+
+
+## 7) 형태소 분석 - Stemming
+
+
+
