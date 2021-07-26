@@ -56,16 +56,36 @@
 	- [1) 역 인덱스 - Reverse Index](#1-역-인덱스---reverse-index)
 	- [2) 텍스트 분석 - Text Analysis](#2-텍스트-분석---text-analysis)
 	- [3) 애널라이저 - Analyser](#3-애널라이저---analyser)
+		- [1. _analyze API](#1-_analyze-api)
+		- [2. Term 쿼리](#2-term-쿼리)
+		- [3. 사용자 정의 애널라이저 - Custom Analyze](#3-사용자-정의-애널라이저---custom-analyze)
+		- [4. 텀 벡터 - Termvectors API](#4-텀-벡터---termvectors-api)
 	- [4) 캐릭터 필터 - character Filter](#4-캐릭터-필터---character-filter)
+		- [1. HTML Strip](#1-html-strip)
+		- [2. Mapping](#2-mapping)
+		- [3. Pattern Replace](#3-pattern-replace)
 	- [5) 토크나이저 - Tokenizer](#5-토크나이저---tokenizer)
+		- [1. Standard, Letter, Whitespace](#1-standard-letter-whitespace)
+		- [2. UAX URL Email](#2-uax-url-email)
+		- [3. Pattern](#3-pattern)
+		- [4. Path hierarchy](#4-path-hierarchy)
 	- [6) 토큰 필터 - Token Filter](#6-토큰-필터---token-filter)
+		- [1. lowercase, uppercase](#1-lowercase-uppercase)
+		- [2. stop](#2-stop)
+		- [3. Synonym](#3-synonym)
+		- [4. NGram, Edge NGram, Shingle](#4-ngram-edge-ngram-shingle)
+		- [5. Unique](#5-unique)
 	- [7) 형태소 분석 - Stemming](#7-형태소-분석---stemming)
+		- [1. snowball](#1-snowball)
+		- [2. nori - 한글 형태소 분석기](#2-nori---한글-형태소-분석기)
+			- [nori 설치](#nori-설치)
+- [7. 인덱스 설정과 매핑 - Settings & Mapping](#7-인덱스-설정과-매핑---settings--mapping)
 
 
 ## 실습 환경
 
 - OS : Window 10
-- Tool : VSCode
+- Editor : VSCode
 - Terminal : bash
 
 # 1. Elasticsearch?
@@ -1370,27 +1390,1007 @@ GET phones/_search
 ## 3) 애널라이저 - Analyser
 - Elasticsearch에는 애널라이저를 조합하고 그 동작을 자세히 확인할 수 있는 API 들이 있다.
 
+### 1. _analyze API
+
+- `_analyze` API로 분석된 문장 확인 가능!
+- `tokenizer`는 하나만 가능. (단 1개 존재 위에 써놓음)
+- `filter` 토큰필터는 배열로 설정
+
+```json
+GET _analyze
+{
+  "text": "The quick brown fox jumps over the lazy dog",
+  "tokenizer": "whitespace",
+  "filter": [
+    "lowercase",
+    "stop",
+    "snowball"
+  ]
+}
+```
+- 결과를 보면 토크나이저, 토큰필터된 "jump"(s 필터링 됨), "lazi"(y가 i로)를 확인할 수 있다.
+- 필터는 순서에 따라 적용되므로 순서가 중요.
+- `lowercase` : 소문자로
+- `stop` : 불용어 제거
+- `snowball` : 형태소 변경
 
 
+위에서 사용한 것 처럼 하나하나 필터와 토크나이저를 적용하여 애널라이저를 커스텀할 수 있고, Elasticsearch에 이미 존재하는 조합들을 사용할 수도 있다.
+
+위의 애널라이저 옵션들은 Elasticsearch에서 `snowball`로 제공함
+
+```json
+GET _analyze
+{
+  "text": "The quick brown fox jumps over the lazy dog",
+  "analyzer": "snowball"
+}
+```
+- 위와 같은 결과
+
+인덱스에 애널라이저를 설정해놓으면 검색 시 애널라이저 옵션을 거쳐 검색된다.
+
+예를들면 설정 안하면 "jump"검색 시 "jumps"가 검색 안되지만 애널라이저 설정하면 검색됨
+
+```json
+PUT my_index2
+{
+  "mappings": {
+    "properties": {
+      "message": {
+        "type": "text",
+        "analyzer": "snowball"
+      }
+    }
+  }
+}
+```
+- my_index2 인덱스의 message 필드에 snowball 애널라이저 적용
+
+```json
+PUT my_index2/_doc/1
+{
+  "message": "The quick brown fox jumps over the lazy dog"
+}
+```
+- 인덱스에 도큐먼트 입력
+
+```json
+GET my_index2/_search
+{
+  "query": {
+    "match": {
+      "message": "jumping"
+    }
+  }
+}
+```
+- jumping으로 검색해도 jump로 필터링된 결과값이 나옴.
+- 검색 메세지의 jumping은 jump로
+- 도큐먼트의 jumps는 역인덱스에 jump로 저장되어 매칭됨.
+
+
+### 2. Term 쿼리
+
+- `match`보다 더 세심한 검색쿼리
+- 애널라이저를 적용하지 않고 검색함
+- jumps 검색 시 안나옴
+- 정확히 jump를 검색해야 나옴! (역인덱스에는 jump로 저장되어 있기 때문!)
+
+```json
+GET my_index2/_search
+{
+  "query": {
+	"message": "jumps"
+  }
+}
+```
+- 결과 안나옴.
+
+------
+
+- 텍스트 분석(Analysis) 과정은 검색에 사용되는 역 인덱스에만 관여 
+- 원본 데이터는 변하지 않으므로 쿼리 결과의 _source 항목에는 항상 원본 데이터가 나옴
+
+- Elasticsearch는 데이터를 실제로 검색에 사용되는 텀(Term) 으로 분석 과정을 거쳐 저장하기 때문에 검색 시 대소문자, 단수나 복수, 원형 여부와 상관 없이 검색이 가능합니다. 이러한 Elasticsearch의 특징을 풀 텍스트 검색(Full Text Search) 이라고 하며 한국어로 전문 검색 이라고도 합니다.
+
+> 다양한 애널라이저, 캐릭터 필터, 토크나이저, 토큰필터는 공식문서 참조 : https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-analyzers.html
+
+
+### 3. 사용자 정의 애널라이저 - Custom Analyze
+
+- 실제로는 주로 커스텀 애널라이저를 사용함.
+
+- 사용자 정의 애널라이저는 인덱스 `settings`의 `"index": { "analysis": }`에서 설정함
+
+```json
+PUT my_index3
+{
+  "settings": {
+    "index": {
+      "analysis": {
+        "analyzer": {
+          "my_custom_analyzer": {
+            "type": "custom",
+            "tokenizer": "whitespace",
+            "filter": [
+              "lowercase",
+              "stop",
+              "snowball"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+```
+- my_index3 인덱스의 settings 안에 my_custom_analyzer 생성
+- `whitespace` 토큰크나이저 그리고 `lowercase`, `stop`, `snowball` 토큰필터를 사용하는 my_custom_analyzer 라는 이름의 애널라이저를 추가
+
+```json
+GET my_index3/_analyze
+{
+	"analyzer": "my_custom_analyzer",
+  "text": [
+	  "The quick brown fox jumps over the lazy dog"
+  ]
+}
+```
+- _analyzer API 로 my_index3 에서 my_custom_analyzer 사용
+
+
+**사용자 정의 토큰필터**
+
+우선 my_index3를 지운다.
+```json
+DELETE my_index3
+```
+
+```json
+PUT my_index3
+{
+  "settings": {
+    "index": {
+      "analysis": {
+        "analyzer": {
+          "my_custom_analyzer": {
+            "type": "custom",
+            "tokenizer": "whitespace",
+            "filter": [
+              "lowercase",
+              "my_stop_filter",
+              "snowball"
+            ]
+          }
+        },
+        "filter": {
+          "my_stop_filter": {
+            "type": "stop",
+            "stopwords": [
+              "brown"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+```
+- brown을 불용어로 설정하는 필터 커스텀
+
+```json
+GET my_index3/_analyze
+{
+  "analyzer": "my_custom_analyzer",
+  "text": [
+    "The quick brown fox jumps over the lazy dog"
+  ]
+}
+```
+- 실행해보면 brown이 불용어 처리되어 결과에 나타나지 않음.
+
+
+### 4. 텀 벡터 - Termvectors API
+
+-  색인된 도큐먼트의 역 인덱스의 내용을 확인할 때는 도큐먼트 별로 _termvectors API를이용해서 확인
+
+```json
+PUT my_index3/_doc/1
+{
+  "message": "The quick brown fox jumps over the lazy dog"
+}
+
+GET my_index3/_termvectors/1?fields=message
+```
+- my_index3/_doc/1 도큐먼트의 message 필드의 termvectors 확인
 
 
 
 ## 4) 캐릭터 필터 - character Filter
 
-- 전체 문장에서 특정 문자를 대치하거나 제거
+- 전처리 도구
+- 전체 문장에서 특정 문자를 대치하거나 제거. 
+- `char_filter` 항목에 배열로 입력하여 적용
+
+### 1. HTML Strip
+
+- 입력 텍스트가 HTML 텍스트인 경우 HTML 태그를 제거함.
+
+```json
+POST _analyze
+{
+  "tokenizer": "keyword",
+  "char_filter": [
+    "html_strip"
+  ],
+  "text": "<p>I&apos;m so <b>happy</b>!</p>"
+}
+```
+- 결과는 <> 등의 태그 제거, HTML 문법 용어 해석하여 처리 됨.
+
+
+
+
+### 2. Mapping
+
+- 지정된 단어를 다른 단어로 치환
+- 특수문자를 적용한 검색에 필수
+- 실제로 제일 많이 쓰임
+
+```json
+POST coding/_bulk
+{"index":{"_id":"1"}}
+{"language":"Java"}
+{"index":{"_id":"2"}}
+{"language":"C"}
+{"index":{"_id":"3"}}
+{"language":"C++"}
+```
+- 예제를 위한 인덱스 생성
+
+```json
+GET coding/_search
+{
+  "query": {
+    "match": {
+      "language": "C++"
+    }
+  }
+}
+```
+- C++로 검색했는데 결과는 C와 C++ 두 개의 도큐먼트가 나왔다.
+- 애널라이저가 특수문자 +를 제거해버려서 이렇게 됨.
+- 따라서 +를 다른 문자로 치환해주어야 한다.
+
+
+`+` 문자를 `_plus_`로 치환하여 색인해보자!
+
+```json
+DELETE coding
+
+PUT coding
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "coding_analyzer": {
+          "char_filter": [
+            "cpp_char_filter"
+          ],
+          "tokenizer": "whitespace",
+          "filter": [ "lowercase", "stop", "snowball" ]
+        }
+      },
+      "char_filter": {
+        "cpp_char_filter": {
+          "type": "mapping",
+          "mappings": [ "+ => _plus_", "- => _minus_" ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "language": {
+        "type": "text",
+        "analyzer": "coding_analyzer"
+      }
+    }
+  }
+}
+```
+- coding 인덱스에 mapping 캐릭터필터 설정.
+
+
+```json
+POST coding/_bulk
+{"index":{"_id":"1"}}
+{"language":"Java"}
+{"index":{"_id":"2"}}
+{"language":"C"}
+{"index":{"_id":"3"}}
+{"language":"C++"}
+
+GET coding/_search
+{
+  "query": {
+    "match": {
+      "language": "C++"
+    }
+  }
+}
+```
+- 다시 검색해보면 C++ 를 포함한 도큐먼트 하나만 검색됨!
+
+
+
+### 3. Pattern Replace
+
+- 정규식(Regular Expression)을 이용해서 좀더 복잡한 패턴들을 치환할 수 있는 캐릭터 필터
+- 예를들면 카멜 표기법으로 된 것을 카멜마다 띄워서 각자의 텀으로 색인하는 등...
+- HelloWorld => hello, world로 나눠서 색인
+
+```json
+PUT camel
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "camel_analyzer": {
+          "char_filter": [
+            "camel_filter"
+          ],
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase"
+          ]
+        }
+      },
+      "char_filter": {
+        "camel_filter": {
+          "type": "pattern_replace",
+          "pattern": "(?<=\\p{Lower})(?=\\p{Upper})",
+          "replacement": " "
+        }
+      }
+    }
+  }
+}
+```
+- camel 인덱스에 pattern_replace 캐릭터필터 설정
+
+
+```json
+GET camel/_analyze
+{
+  "analyzer": "camel_analyzer",
+  "text": [
+    "public void FooBazBar()"
+  ]
+}
+```
+- 결과는 Foo Baz Bar 하나씩 색인됨.
 
 
 ## 5) 토크나이저 - Tokenizer
 - 문장에 속한 단어들을 텀 단위로 하나씩 분리
+- 단 한개만 사용 가능
 
+
+### 1. Standard, Letter, Whitespace
+- 가장 많이 사용되는 것들
+
+```json
+GET _analyze
+{
+  "tokenizer": "standard",
+  "text": "THE quick.brown_FOx jumped! @ 3.5 meters."
+}
+
+GET _analyze
+{
+  "tokenizer": "letter",
+  "text": "THE quick.brown_FOx jumped! @ 3.5 meters."
+}
+
+GET _analyze
+{
+  "tokenizer": "whitespace",
+  "text": "THE quick.brown_FOx jumped! @ 3.5 meters."
+}
+```
+- `standard` : 특수문자 제거 및 공백 기준으로 색인. **젤 많이 쓰임**
+- `letter` : 모든 공백, 숫자, 특수문자 기준으로 색인
+- `whiterspace` : 공백 기준으로 색인
+
+### 2. UAX URL Email
+
+- 이메일 주소와 웹 URL 경로는 분리하지 않고 그대로 하나의 텀으로 저장
+- `standard`로 할 경우 @같은 특수문자를 제거해버려서...
+
+```json
+GET _analyze
+{
+  "tokenizer": "uax_url_email",
+  "text": "email address is my-name@email.com and website is https://www.elastic.co"
+}
+```
+
+
+### 3. Pattern
+
+- `/`, `|`, `,` 등 특수한 문자를 구분자로 사용하여 텀을 분리하고 싶은 경우 사용
+
+```json
+PUT pat_tokenizer
+{
+  "settings": {
+    "analysis": {
+      "tokenizer": {
+        "my_pat_tokenizer": {
+          "type": "pattern",
+          "pattern": "/"
+        }
+      }
+    }
+  }
+}
+
+GET pat_tokenizer/_analyze
+{
+  "tokenizer": "my_pat_tokenizer",
+  "text": "/usr/share/elasticsearch/bin"
+}
+```
+- `/`를 구분자로 하는 토크나이저 생성 후 이걸로 분석
+- 결과는 `/`로 나눠져서 색인됨.
+
+
+
+### 4. Path hierarchy
+
+- 파일 경로는 다르나 디렉토리 명이 같은 경우 혼돈을 줌
+- 이때 경로별로 저장하는 토크나이저
+
+```json
+POST _analyze
+{
+  "tokenizer": "path_hierarchy",
+  "text": "/usr/share/elasticsearch/bin"
+}
+```
 
 
 ## 6) 토큰 필터 - Token Filter
 
 - 분리된 텀 들을 하나씩 가공
 
+> 공식문서 토큰필터 : https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-tokenfilters.html
+
+
+### 1. lowercase, uppercase
+
+```json
+GET _analyze
+{
+  "filter": [ "lowercase" ],
+  "text": [ "Harry Potter and the Philosopher's Stone" ]
+}
+```
+- 그냥 필수로 쓰임
+
+
+### 2. stop
+
+- 불용어 제거하는 토큰필터
+
+
+```json
+PUT my_stop
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "my_stop_filter": {
+          "type": "stop",
+          "stopwords": [
+            "in",
+            "the",
+            "days"
+          ]
+        }
+      }
+    }
+  }
+}
+
+GET my_stop/_analyze
+{
+  "tokenizer": "whitespace",
+  "filter": [
+    "lowercase",
+    "my_stop_filter"
+  ],
+  "text": [ "Around the World in Eighty Days" ]
+}
+```
+- 불용어 커스텀
+
+
+파일에 불용어를 저장해놓고 불러와서 쓸 수도 있다.
+
+```sh
+$ mkdir config/user_dic
+$ vi my_stop_dic.txt
+
+in
+the
+eighty
+```
+- 세 단어를 불용어로 입력
+- 반드시 엔터로 구분
+
+```json
+PUT my_stop
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "my_stop_filter": {
+          "type": "stop",
+          "stopwords_path": "./user_dic/my_stop_dic.txt"
+        }
+      }
+    }
+  }
+}
+
+GET my_stop/_analyze
+{
+  "tokenizer": "whitespace",
+  "filter": [
+    "lowercase",
+    "my_stop_filter"
+  ],
+  "text": [ "Around the World in Eighty Days" ]
+}
+```
+- config 디렉토리를 기준으로 상대 경로를 지정
+- 불용어로 지정되어 색인 안됨
+
+
+기존에 사전 파일을 수정하면 인덱스를 새로고침 해줘야함
+```json
+POST <인덱스명>/_close
+POST <인덱스명>/_open
+```
+- close 된 상태에서는 검색 불가능.
+
+### 3. Synonym
+
+- 동의어 설정하는 것 (AWS = Amazon = 아마존.. 등)
+
+- `synonyms`에서 설정
+- 파일을 만들어 설정
+
+1. "A, B => C" : 왼쪽의 A, B 대신 오른쪽의 C 텀을 저장. A, B 로는 C 의 검색이 가능하지만 C 로는 A, B 가 검색안됨.
+2. "A, B" : A, B 각 텀이 A 와 B 두개의 텀을 모두 저장. A 와 B 모두 서로의 검색어로 검색됨.
+
+```json
+PUT my_synonym
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_syn": {
+          "tokenizer": "whitespace",
+          "filter": [
+            "lowercase",
+            "syn_aws"
+          ]
+        }
+      },
+      "filter": {
+        "syn_aws": {
+          "type": "synonym",
+          "synonyms": [
+            "amazon => aws"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "message": {
+        "type": "text",
+        "analyzer": "my_syn"
+      }
+    }
+  }
+}
+```
+- "amazon => aws" 동의어를 지정하는 my_synonym 인덱스 생성
+
+```json
+PUT my_synonym/_doc/1
+{ "message" : "Amazon Web Service" }
+PUT my_synonym/_doc/2
+{ "message" : "AWS" }
+
+
+// term 쿼리로 aws 검색
+GET my_synonym/_search
+{
+  "query": {
+    "term": {
+      "message": "aws"
+    }
+  }
+}
+
+// term 쿼리로 amazon 검색
+GET my_synonym/_search
+{
+  "query": {
+    "term": {
+      "message": "amazon"
+    }
+  }
+}
+
+// match 쿼리로 amazon 검색
+GET GET my_synonym/_search
+{
+  "query": {
+    "match": {
+      "message": "amazon"
+    }
+  }
+}
+```
+
+```json
+DELETE my_synonym
+
+PUT my_synonym
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_syn": {
+          "tokenizer": "whitespace",
+          "filter": [
+            "lowercase",
+            "syn_aws"
+          ]
+        }
+      },
+      "filter": {
+        "syn_aws": {
+          "type": "synonym",
+          "synonyms": [
+            "amazon, aws"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "message": {
+        "type": "text",
+        "analyzer": "my_syn"
+      }
+    }
+  }
+}
+```
+- "amazon, aws" 동의어를 지정하는 my_synonym 인덱스 생성
+- 이후 명령어를 입력해보자.
+
+```json
+```json
+PUT my_synonym/_doc/1
+{ "message" : "Amazon Web Service" }
+PUT my_synonym/_doc/2
+{ "message" : "AWS" }
+
+
+// term 쿼리로 aws 검색
+GET my_synonym/_search
+{
+  "query": {
+    "term": {
+      "message": "aws"
+    }
+  }
+}
+
+// term 쿼리로 amazon 검색
+GET my_synonym/_search
+{
+  "query": {
+    "term": {
+      "message": "amazon"
+    }
+  }
+}
+
+// match 쿼리로 amazon 검색
+GET GET my_synonym/_search
+{
+  "query": {
+    "match": {
+      "message": "amazon"
+    }
+  }
+}
+```
+
+동음어가 많으면 쿼리로 관리하기 힘드므로 파일로 저장해둔다.
+
+```sh
+$ cd config/user_dic
+$ vi my_syn_dic.txt
+
+quick, fast
+hop, jump
+```
+
+파일 생성 후 다시 실행
+
+```json
+DELETE my_synonym
+
+PUT my_synonym
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_syn": {
+          "tokenizer": "whitespace",
+          "filter": [
+            "lowercase",
+            "syn_aws"
+          ]
+        }
+      },
+      "filter": {
+        "syn_aws": {
+          "type": "synonym",
+          "synonyms_path": "user_dic/my_syn_dic.txt"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "message": {
+        "type": "text",
+        "analyzer": "my_syn"
+      }
+    }
+  }
+}
+```
+- 이후 동음어를 검색해본다.
+
+
+```json
+PUT my_synonym/_doc/1
+{ "message": "Quick brown fox jump" }
+PUT my_synonym/_doc/2
+{ "message": "hop rabbit is fast" }
+
+GET my_synonym/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "message": "quick"
+          }
+        },
+        {
+          "term": {
+            "message": "jump"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+- quick과 jump로만 검색해도 hop, fast가 포함된 도큐먼트가 리턴된다.
+
+
+
+### 4. NGram, Edge NGram, Shingle
+
+**NGram : 텀 하나를 또 나눠서 저장하는 것.**
+예를들면 Hour를 Ho, ou, ur 이렇게 나눠서 저걸로도 검색 가능하게 하는 것.
+
+`"type": "nGram"`으로 설정
+
+몇 글자로 나눌지는 `min_gram`, `max_gram`으로 설정가능 
+
+```json
+PUT my_ngram
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "my_ngram_f": {
+          "type": "nGram",
+          "min_gram": 2,
+          "max_gram": 3
+        }
+      }
+    }
+  }
+}
+
+GET my_ngram/_analyze
+{
+  "tokenizer": "keyword",
+  "filter": [
+    "my_ngram_f"
+  ],
+  "text": "house"
+}
+```
+- 예제
+
+
+
+**Edge NGram : 텀 앞쪽부터 나눠서 저장하는 것**
+
+예를들면 hour을 h, ho, hou, hour 이렇게 저장함
+
+`"type": "edgeNGram"`로 설정
+
+`min_gram`, `max_gram`으로 설정
+
+```json
+DELETE my_ngram
+
+PUT my_ngram
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "my_ngram_f": {
+          "type": "edgeNGram",
+          "min_gram": 1,
+          "max_gram": 3
+        }
+      }
+    }
+  }
+}
+
+GET my_ngram/_analyze
+{
+  "tokenizer": "keyword",
+  "filter": [
+    "my_ngram_f"
+  ],
+  "text": "house"
+}
+```
+- 예제
+
+
+**Shingle : 단어 단위로 구성하여 묶음**
+
+예를들면 My name is dogyun을 My name, name is, is dogyun으로 나눠서 저장하는 것.
+
+`"type": "shingle"`로 설정
+
+`"min_shingle_size"`, `"max_shingle_size"`로 설정
+
+```json
+PUT my_shingle
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "my_shingle_f": {
+          "type": "shingle",
+          "min_shingle_size": 3,
+          "max_shingle_size": 4
+        }
+      }
+    }
+  }
+}
+
+GET my_shingle/_analyze
+{
+  "tokenizer": "whitespace",
+  "filter": [
+    "my_shingle_f"
+  ],
+  "text": "this is my sweet home"
+}
+```
+- 예제
+
+
+> NGram, edgeNGram, Shingle은 자동 완성 기능을 구현하거나 프로그램 코드 안에서 문법이나 기능명을 검색하는 것과 같이 특수한 요구사항을 충족해야 하는 경우 유용
+
+
+### 5. Unique
+
+중복되는 텀 들은 하나만 저장하도록
+
+예를들면 "white fox, white rabbit, white bear"은 white가 3번 저장되는데 이 중복을 없애줌.
+
+```json
+GET _analyze
+{
+  "tokenizer": "standard",
+  "filter": [
+    "lowercase",
+    "unique"
+  ],
+  "text": [
+    "white fox, white rabbit, white bear"
+  ]
+}
+```
+
+스코어 계산이 필요한 동작에서는 안 쓰는게 좋다.
+
+왜? TF, IDF를 계산하는데 해당 단어의 빈도수가 필요하기 때문이다.
+
 
 ## 7) 형태소 분석 - Stemming
+
+- 텀에 있는 단어들의 기본 형태인 어간을 추출하는 과정
+
+### 1. snowball
+
+- 대표적인 영어 형태소 분석기
+- Elasticsearch에 있어서 그냥 쓰면됨.
+- 위에서 써봤다.
+
+### 2. nori - 한글 형태소 분석기
+
+- 대표 한글 형태소분석기
+- elasticsearch에 기본적으로 없어서 설치해야함
+
+
+#### nori 설치
+analysis-nori 플러그인을 설치해야 함
+
+```sh
+$ ./bin/elasticsearch-plugin.bat install analysis-nori 
+```
+
+```json
+GET _analyze
+{
+  "tokenizer": "nori_tokenizer",
+  "text": [
+    "동해물과 백두산이"
+  ]
+}
+```
+- 간단 예제
+- 잘 나눠진다. 쩌러
+
+> 더 많은 정보 : https://esbook.kimjmin.net/06-text-analysis/6.7-stemming/6.7.2-nori
+
+# 7. 인덱스 설정과 매핑 - Settings & Mapping
+
+- 인덱스는 하나의 노드에만 있지 않음
+- 샤드 단위로 쪼개져서 각 노드에 분산되어있다.
+- 인덱스 단위에서의 설정해보기 
+- 데이터 명세인 매핑 알아보기
 
 
 
