@@ -80,6 +80,19 @@
 		- [2. nori - 한글 형태소 분석기](#2-nori---한글-형태소-분석기)
 			- [nori 설치](#nori-설치)
 - [7. 인덱스 설정과 매핑 - Settings & Mapping](#7-인덱스-설정과-매핑---settings--mapping)
+	- [1) 설정 - Settings](#1-설정---settings)
+	- [2) 매핑 - Mapping](#2-매핑---mapping)
+		- [매핑 정의](#매핑-정의)
+		- [타입 종류들](#타입-종류들)
+			- [1. 문자열 - text, keyword](#1-문자열---text-keyword)
+			- [2. 숫자 - long, double...](#2-숫자---long-double)
+			- [3. 날짜 - date](#3-날짜---date)
+			- [4. 불리언 - boolean](#4-불리언---boolean)
+			- [5. Object와 Nested](#5-object와-nested)
+			- [6. 위치정보 - Geo](#6-위치정보---geo)
+			- [7. 기타 필드타입 - IP, Range, Binary](#7-기타-필드타입---ip-range-binary)
+	- [3) 멀티(다중)필드 - Multi Field](#3-멀티다중필드---multi-field)
+- [8. 집계 - Aggregations](#8-집계---aggregations)
 
 
 ## 실습 환경
@@ -2393,4 +2406,529 @@ GET _analyze
 - 데이터 명세인 매핑 알아보기
 
 
+## 1) 설정 - Settings
 
+인덱스 생성 후 설정 보기
+```json
+PUT my_index
+
+GET my_index 또는
+GET my_index/_settings
+```
+
+인덱스를 생성할 때 설정값을 넣어줘야한다. 생성 이후에는 수정이 몇개는 안됨.
+
+가볍게 뭐가 있는지 보자
+
+- number_of_shards, number_of_replicas
+	```json
+	PUT my_index
+	{
+	  "settings": {
+		"index": {
+		  "number_of_shards": 3,
+		  "number_of_replicas": 1
+		}
+	  }
+	}
+	```
+	- number_of_replicas 값은 인덱스 생성 후에도 바꿀 수 있다.
+
+- refresh_interval : 세그먼트가 만들어지는 리프레시 타임을 설정하는 값
+
+	```json
+	PUT my_index
+	{
+	  "settings": {
+		"refresh_interval": "30s"
+	  }
+	}
+	```
+
+- analyzer, tokenizer, filter : 앞에서 해봤다.
+
+	```json
+	PUT my_index
+	{
+	  "settings": {
+		"analysis": {
+		  "analyzer": {
+			"my_analyzer": {
+			"type": "custom",
+			"char_flter": [ "...", "..." ... ]
+			"tokenizer": "...",
+			"filter": [ "...", "..." ... ]
+			}
+		  },
+		  "char_filter":{
+			"my_char_filter":{
+			"type": "…"
+			... 
+			}
+		  }
+		  "tokenizer": {
+			"my_tokenizer":{
+			"type": "…"
+			...
+			}
+		  },
+		  "filter": {
+			"my_token_filter": {
+			"type": "…"
+			...
+			}
+		  }
+		}
+	  }
+	}
+	```
+
+
+> 이 외에도 많은 설정이 있다. 공식문서 참조 : https://www.elastic.co/guide/en/elasticsearch/reference/7.9/index.html
+
+
+## 2) 매핑 - Mapping
+
+Elasticsearch를 사용하면서 가장 손이 많이 간다.
+
+인덱스에 도큐먼트 추가 시 자동으로 매핑이 생성됨.
+
+```json
+PUT books/_doc/1
+{
+  "title": "Romeo and Juliet",
+  "author": "William Shakespeare",
+  "category": "Tragedies",
+  "publish_date": "1562-12-01T00:00:00",
+  "pages": 125
+}
+
+GET books/_mapping
+```
+- 각 필드의 매핑이 자동으로 생성됨.
+
+
+### 매핑 정의
+
+자동 매핑된 것이 원하는 포멧과 다르다면 문제가 있다. 안전하게 직접 매핑하는것 좋다.
+
+나는 전화번호를 숫자가 아닌 문자열로 저장하고싶은데 자동매핑이 숫자로 지정해버리면 난감쓰.
+
+- 이미 만들어진 매핑에 필드 추가 가능.
+- 이미 만들어진 필드 수정 및 삭제는 불가능.
+
+```json
+PUT <인덱스명>
+{
+  "mappings": {
+    "properties": {
+      "<필드명>":{
+        "type": "<필드 타입>"
+        … <필드 설정>
+      }
+      …
+    }
+  }
+}
+```
+
+
+추가하고 싶을 때
+
+```json
+PUT <인덱스명>/_mapping
+{
+  "properties": {
+    "<추가할 필드명>": { 
+      "type": "<필드 타입>"
+      … <필드 설정>
+    }
+  }
+}
+```
+
+
+매핑 설정을 한 인덱스 생성해보기
+```json
+PUT books
+{
+  "mappings": {
+    "properties": {
+      "category": {
+        "type": "keyword"
+      },
+      "pages": {
+        "type": "byte"
+      },
+      "title": {
+        "type": "text"
+      }
+    }
+  }
+}
+
+PUT books/_doc/1
+{
+  "title": "Romeo and Juliet",
+  "author": "William Shakespeare",
+  "category": "Tragedies",
+  "publish_date": "1562-12-01T00:00:00",
+  "pages": 125
+}
+
+GET books/_mapping
+```
+- 확인해보면 매핑하지 않은 필드는 자동매핑된다.
+
+
+### 타입 종류들
+
+#### 1. 문자열 - text, keyword
+- text : 역색인 구조 할 때 
+- keyword : 문자열 하나를 토큰으로 
+
+
+#### 2. 숫자 - long, double...
+#### 3. 날짜 - date
+#### 4. 불리언 - boolean
+#### 5. Object와 Nested
+- object : 한 요소가 여러 하위 정보를 가지고 있는 경우
+- nested : object 타입 필드에 있는 여러 개의 object 값들이 서로 다른 역 색인 구조를 갖도록 
+
+
+#### 6. 위치정보 - Geo
+
+지도에 표시하려면 **인덱스를 만든 뒤** 인덱스 패턴을 Kibana에 추가해줘야한다.
+
+1. kibana 페이지(http://localhost:5601) 검색창에 `index pattern`을 검색
+2. 생성한 인덱스 추가
+3. 좌측 막대3개 메뉴 열고 `Maps` 클릭
+4. 우측 `Add layer` 클릭
+5. `elasticsearch` -> `Document` 클릭
+6. 생성한 인덱스 선택(반드시 geo field가 포함되어 있어야함.)
+7. `Add layer` 누르면 지도에 표시됨!
+
+
+
+- geo_point : 위도(latitude)와 경도(longitude) 두 개의 실수 값을 가지고 지도 위의 한 점
+	```json
+	PUT my_locations/_doc/1
+	{
+	  "location": {
+		"lat": 41.12,
+		"lon": -71.34
+	  }
+	}
+	```
+
+- geo_bounding_box : 위치정보를 다룰 때 자주 쓰인다. 좌표값을 주면 해당 박스 내에 있는 도큐먼트 리턴
+
+	```json
+	PUT my_geo
+	{
+	  "mappings": {
+		"properties": {
+		  "location": {
+			"type": "geo_point"
+		  }
+		}
+	  }
+	}
+
+	PUT my_geo/_bulk
+	{"index":{"_id":"1"}}
+	{"station":"강남","location":{"lon":127.027926,"lat":37.497175},"line":"2호선"}
+	{"index":{"_id":"2"}}
+	{"station":"종로3가","location":{"lon":126.991806,"lat":37.571607},"line":"3호선"}
+	{"index":{"_id":"3"}}
+	{"station":"여의도","location":{"lon":126.924191,"lat":37.521624},"line":"5호선"}
+	{"index":{"_id":"4"}}
+	{"station":"서울역","location":{"lon":126.972559,"lat":37.554648},"line":"1호선"}
+	```
+	- 예제입력
+
+	top_left 와 bottom_right 두 개의 옵션에 각각 위치점을 입력하고 이 점들을 토대로 그린 네모 칸 안에 위치하는 도큐먼트들을 불러옵
+
+	```json
+	GET my_geo/_search
+	{
+	  "query": {
+		"geo_bounding_box": {
+		  "location": {
+			"bottom_right": {
+			  "lat": 37.4899,
+			  "lon": 127.0388
+			},
+			"top_left": {
+			  "lat": 37.5779,
+			  "lon": 126.9617
+			}
+		  }
+		}
+	  }
+	}
+	```
+
+- geo_distance : 하나의 위치점 기준으로 반경 원 안에 있는 도큐먼트 리턴
+
+	```json
+	GET my_geo/_search
+	{
+	  "query": {
+		"geo_distance": {
+		  "distance": "5km",
+		  "location": {
+			"lat": 37.5358,
+			"lon": 126.9559
+		  }
+		}
+	  }
+	}
+	```
+
+- geo_shape : 다양한 형태로 지도에 표시 가능
+
+```json
+PUT my_shape
+{
+  "mappings": {
+    "properties": {
+      "location": {
+        "type": "geo_shape"
+      }
+    }
+  }
+}
+
+PUT my_shape/_doc/1
+{
+  "location": {
+    "type": "point",
+    "coordinates": [
+      127.027926,
+      37.497175
+    ]
+  }
+}
+
+PUT my_locations/_doc/1
+{
+  "location": {
+	  "lat": 41.12,
+	  "lon": -71.34
+  }
+}
+
+PUT my_shape/_doc/2
+{
+  "location": {
+    "type": "multipoint",
+    "coordinates": [
+      [ 127.027926, 37.497175 ],
+      [ 126.991806, 37.571607 ],
+      [ 126.924191, 37.521624 ],
+      [ 126.972559, 37.554648 ]
+    ]
+  }
+}
+
+PUT my_shape/_doc/3
+{
+  "location": {
+    "type": "linestring",
+    "coordinates": [
+      [ 127.027926, 37.497175 ],
+      [ 126.991806, 37.571607 ]
+    ]
+  }
+}
+
+PUT my_shape/_doc/4
+{
+  "location": {
+    "type": "multilinestring",
+    "coordinates": [
+      [
+        [ 127.027926, 37.497175 ],
+        [ 126.991806, 37.571607 ]
+      ],
+      [
+        [ 126.924191, 37.521624 ],
+        [ 126.972559, 37.554648 ]
+      ]
+    ]
+  }
+}
+
+PUT my_shape/_doc/5
+{
+  "location": {
+    "type": "polygon",
+    "coordinates": [
+      [
+        [ 127.027926, 37.497175 ],
+        [ 126.991806, 37.571607 ],
+        [ 126.924191, 37.521624 ],
+        [ 126.972559, 37.554648 ],
+        [ 127.027926, 37.497175 ]
+      ]
+    ]
+  }
+}
+
+PUT my_shape/_doc/6
+{
+  "location": {
+    "type": "multipolygon",
+    "coordinates": [
+      [
+        [
+          [ 127.027926, 37.497175 ],
+          [ 126.991806, 37.571607 ],
+          [ 126.924191, 37.521624 ],
+          [ 127.004943, 37.504810 ],
+          [ 127.027926, 37.497175 ]
+        ]
+      ],
+      [
+        [
+          [ 126.936893, 37.555134 ],
+          [ 126.967894, 37.529170 ],
+          [ 126.924191, 37.521624 ],
+          [ 126.936893, 37.555134 ]
+        ]
+      ]
+    ]
+  }
+}
+
+PUT my_shape/_doc/7
+{
+  "location": {
+    "type": "envelope",
+    "coordinates": [
+      [ 126.936893, 37.555134 ],
+      [ 127.004943, 37.50481 ]
+    ]
+  }
+}
+```
+
+- geo_shape 쿼리 : geo타입의 도큐먼트 검색을 위해서 사용
+
+	```json
+	DELETE my_shape
+
+	PUT my_shape
+	{
+	  "mappings": {
+		"properties": {
+		  "location": {
+			"type": "geo_shape"
+		  }
+		}
+	  }
+	}
+
+	PUT my_shape/_doc/1
+	{
+      "place": "경복궁",
+	  "location": {
+		"type": "envelope",
+		"coordinates": [
+		  [ 126.9735, 37.5837 ],
+		  [ 126.9802, 37.5756 ]
+		]
+	  }
+	}
+
+	PUT my_shape/_doc/2
+	{
+	  "place": "명동",
+	  "location": {
+		"type": "envelope",
+		"coordinates": [
+		  [ 126.9778, 37.5656 ],
+		  [ 126.9884, 37.5558 ]
+		]
+	  }
+	}
+
+	PUT my_shape/_doc/3
+	{
+	  "place": "홍대",
+	  "location": {
+		"type": "envelope",
+		"coordinates": [
+		  [ 126.9199, 37.5583 ],
+		  [ 126.9347, 37.5481 ]
+		]
+	  }
+	}
+	```
+	- 예제 입력
+
+	```json
+	GET my_shape/_search
+	{
+	  "query": {
+		"geo_shape": {
+		  "location": {
+			"shape": {
+			  "type": "envelope",
+			  "coordinates": [
+				[ 126.9687, 37.58 ],
+				[ 126.99, 37.5543 ]
+			  ]
+			},
+		    "relation": "intersects"
+		  }
+		}
+	  }
+	}
+	```
+	- 검색하기
+	- `"relation": "intersects"` : 디폴트 값입니다. 쿼리 영역과 도큐먼트 값 영역이 일부라도 겹쳐지면 참 입니다.
+	- `"relation": "disjoint"` : 도큐먼트 값 영역이 쿼리 영역과 겹치지 않는 쿼리 영역 바깥에 있는 도큐먼트들을 가져옵니다.
+	- `"relation": "within"` : 도큐먼트의 값들이 모두 쿼리 영역 안에 완전히 포함 되어 있는 도큐먼트들을 가져옵니다.
+
+
+
+> 참고 : https://esbook.kimjmin.net/07-settings-and-mappings/7.2-mappings/7.2.6-geo
+> 공식문서 : https://www.elastic.co/guide/en/elasticsearch/reference/7.0/geo-queries.html
+
+#### 7. 기타 필드타입 - IP, Range, Binary
+
+- IP : `"type": "ip"` 으로 선언
+- Range : 전에 했다. 날짜, 시간, 숫자, ip주소 등등 값을 비교할 수 있다.
+- Binary : `"type": "binary"` 로 지정해서 시스템 파일이나 이미지 정보 같은 바이너리 값을 저장
+
+> 자세한 정보는 참조 : https://esbook.kimjmin.net/07-settings-and-mappings/7.2-mappings
+
+
+## 3) 멀티(다중)필드 - Multi Field
+
+- 하나의 필드값에 여려 개의 역 인덱스로 저장할 수 있게 함.
+
+```json
+PUT my_index
+{
+  "mappings": {
+    "properties": {
+      "<필드명1>": {
+        "type": "text",
+        "fields": {
+          "<필드명2>": {
+            "type": "<타입>"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+
+
+
+# 8. 집계 - Aggregations
