@@ -1,11 +1,11 @@
-    - [1. Logstash?](#1-logstash)
-    - [2. 설치 및 실행](#2-설치-및-실행)
-    - [3. 실습](#3-실습)
-      - [예제파일 다운](#예제파일-다운)
-      - [Filebeat 설치 및 설정](#filebeat-설치-및-설정)
-      - [Logstash 설정](#logstash-설정)
-      - [grok filter plugin](#grok-filter-plugin)
-      - [Elasticsearch로 데이터 보내기](#elasticsearch로-데이터-보내기)
+- [1. Logstash?](#1-logstash)
+- [2. 설치 및 실행](#2-설치-및-실행)
+- [3. 실습](#3-실습)
+  - [예제파일 다운](#예제파일-다운)
+  - [Filebeat 설치 및 설정](#filebeat-설치-및-설정)
+  - [Logstash 설정](#logstash-설정)
+  - [grok filter plugin](#grok-filter-plugin)
+  - [Elasticsearch로 데이터 보내기](#elasticsearch로-데이터-보내기)
 
 
 ## 개발환경
