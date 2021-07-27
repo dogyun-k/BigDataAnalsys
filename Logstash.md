@@ -4,6 +4,7 @@
 - Terminal : bash
 - Java 16
 
+> 공식문서를 정리한 것임 : https://www.elastic.co/guide/en/logstash/current/getting-started-with-logstash.html
 
 # 1. Logstash?
 
@@ -53,9 +54,17 @@ Ctrl + C
 > 
 > Powershell에서 실행함..
 
-# 3. 예제
+# 3. 실습
 
 Apache web logs를 인풋으로 예제 진행
+
+터미널은 총 3개를 킨다.
+
+1. Elasticsearch용
+2. filebeat용
+3. Logstash용
+
+각자 해당 프로그램의 홈 디렉토리로 이동해둔다.
 
 ## 예제파일 다운
 
@@ -77,18 +86,21 @@ $ cat logstash-tutorial.log
 
 ## Filebeat 설치 및 설정
 
-Logstash에 데이터 보내기 전에 **Filebeat**(전처리 오픈소스)로 데이터 재구성 해줘야함.
+Logstash에 데이터를 보내기 위해 **Filebeat** 오픈소스 사용
+
+설치
 
 > https://www.elastic.co/kr/downloads/beats/filebeat
 
 Zip 파일 다운받고 압축풀기
 
 `filebeat.yml` 열기
+
 ```sh
 $ vi filebeat.yml
 ```
 
-Filebeat inputs에 인풋파일 설정
+Filebeat inputs에 인풋파일 설정(보낼 파일)
 
 ```yaml
 filebeat.inputs:
@@ -116,6 +128,32 @@ output.logstash:
 $ ./filebeat -e -c filebeat.yml -d "publish"
 ```
 
+편의를 위해 실행스크립트를 만들자.
+
+파일 생성
+
+```sh
+$ vi start.sh
+```
+
+내용 입력
+
+```sh
+rm -r data/registry
+./filebeat -e -c filebeat.yml -d "publish"
+```
+
+실행할 수 있게 설정
+```sh
+$ chmod 755 start.sh
+```
+
+실행해보기
+```sh
+$ ./start.sh
+```
+
+
 ## Logstash 설정
 
 Logstash Home 디렉토리에 파이프라인 설정 파일 생성
@@ -139,14 +177,16 @@ output {
 ```
 - 만든 파일에 붙여넣고 시작!
 
-Beats input 플러그인
+Beats input 플러그인. 
 ```yaml
   beats {
     port => "5044"
   }
 ```
+- 포트 5044로 filebeat에서 전송한 데이터를 입력받음.
 
-Logstash 실행 결과 출력을 위한 것
+
+Logstash 실행 결과를 터미널로 출력을 위한 것
 ```yaml
   stdout { codec => rubydebug }
 ```
@@ -176,11 +216,24 @@ Starting server on port: 5044
 > 이유 : 현재 `pipeline.yml`은 멀티파이프라인 실행을 위한건데 되는데 우리가 설정한 conf파일은 싱글 파이프라인을 위한 설정이라서 그럼.
 
 이제 다시 filebeats를 실행하면 logstash로 log가 전송된다.
-```sh
-$ ./filebeat -e -c filebeat.yml -d "publish"
-```
 
 **Filebeat로부터 log를 읽는 파이프라인 실행 완료**
+
+실행파일 생성
+```sh
+$ vi start.sh
+```
+
+내용 입력
+```sh
+./bin/logstash.bat -f first-pipeline.conf --config.reload.automatic
+```
+
+모드 변경
+```sh
+$ chmod 755 start.sh
+```
+
 
 ## grok filter plugin
 
@@ -197,17 +250,9 @@ filter {
 }
 ```
 
-저장. 
-
-Logstash는 자동 리로드, filebeat의 registry 제거해야함
-
+저장 후 filebeat 터미널에서 다시 filebeat 실행
 ```sh
-$ rm -r data/registry
-```
-
-다시 filebeat 실행
-```sh
-$ ./filebeat -e -c filebeat.yml -d "publish"
+$ ./start.sh
 ```
 - JSON형태로 받아왔다.
 
@@ -225,10 +270,9 @@ filter {
 }
 ```
 
-다시 실행
+저장 후 filebeat 실행
 ```sh
-$ rm -r data/registry
-$ ./filebeat -e -c filebeat.yml -d "publish"
+$ ./start.sh
 ```
 
 결과에서 `geoip` 정보를 확인할 수 있다.
@@ -273,7 +317,7 @@ output {
 2. Logstash
 3. filebeat
 
-하면 filebeat에서 데이터 입력받고 logstash에서 전처리 후 최종적으로 elasticsearch에 색인하는 logstash 파이프라인이 구성되었다.
+하면 filebeat에서 데이터 입력받고 logstash에서 처리 후 최종적으로 elasticsearch에 색인하는 logstash 파이프라인이 구성되었다.
 
 테스트
 
