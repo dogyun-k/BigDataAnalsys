@@ -81,8 +81,16 @@ def normalization(address):
 
     # 괄호와 포함된 단어 지우기
     address = re.sub(r'\([^)]*\)', '', address)
-    
     address = address.strip()
+
+    '''
+    splited_addr = address.split(" ")
+    if len(splited_addr)>1:
+        if splited_addr[1].endswith("로"):
+            del splited_addr[0]
+            address = " ".join(splited_addr)
+    '''
+
     return "대구 북구 " + address
 
 def split_data_into_date(split_year):
@@ -120,7 +128,7 @@ def refactoring_file(file_name):
 def check_ok(file_name):
     ### 검색 안 되는 주소 리스트 뽑기 ###
 
-    # f = open(file_name+'.csv', 'r', encoding='utf-8-sig')
+    f = open(file_name+'.csv', 'r', encoding='utf-8-sig')
     f = open(file_name+'.txt', 'r', encoding='utf-8-sig')
     result = open(file_name+'_checked.csv', 'w', newline='', encoding='utf-8-sig')
 
@@ -153,5 +161,5 @@ def check_ok(file_name):
 
 if "__main__":
 
-    # remove_overlap('2021')
+    remove_overlap('2021')
     check_ok('2021')
