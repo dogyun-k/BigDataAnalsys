@@ -1,0 +1,74 @@
+{
+    "status": "OK",
+    "meta": { "totalCount": 1, "page": 1, "count": 1 },
+    "addresses":
+        [
+            {
+                "roadAddress": "대구광역시 서구 달구벌대로371길 20-1 SG펠리체",
+                "jibunAddress": "대구광역시 서구 내당동 908-9 SG펠리체",
+                "englishAddress": "20-1, Dalgubeol-daero 371-gil, Seo-gu, Daegu, Republic of Korea",
+                "addressElements":
+                    [
+                        {
+                            "types": ["SIDO"],
+                            "longName": "대구광역시",
+                            "shortName": "대구광역시
+                                ",
+                            "code": "",
+                        },
+                        {
+                            "types": ["SIGUGUN"],
+                            "longName": "서구",
+                            "shortName": "서구",
+                            "code": "",
+                        },
+                        {
+                            "types": ["DONGMYUN"],
+                            "longName": "내당동",
+                            "shortName": "내당동",
+                            "code": "",
+                        },
+                        {
+                            "types": ["RI"],
+                            "longName": "",
+                            "shortName": "",
+                            "code": "",
+                        },
+                        {
+                            "types": ["ROAD_NAME"],
+                            "longName": "달구벌대로371길",
+                            "shortName": "달구벌대로371길",
+                            "code": "",
+                        },
+                        {
+                            "types": ["BUILDING_NUMBER"],
+                            "longName": "20-1",
+                            "shortName": "20-1",
+                            "code": "",
+                        },
+                        {
+                            "types": ["BUILDING_NAME"],
+                            "longName": "SG펠리체",
+                            "shortName": "SG펠리체",
+                            "code": "",
+                        },
+                        {
+                            "types": ["LAND_NUMBER"],
+                            "longName": "908-9",
+                            "shortName": "908-9",
+                            "code": "",
+                        },
+                        {
+                            "types": ["POSTAL_CODE"],
+                            "longName": "41871",
+                            "shortName": "41871",
+                            "code": "",
+                        },
+                    ],
+                "x": "128.5674620",
+                "y": "35.8625875",
+                "distance": 0.0,
+            },
+        ],
+    "errorMessage": "",
+}
