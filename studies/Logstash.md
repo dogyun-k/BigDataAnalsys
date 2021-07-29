@@ -98,6 +98,8 @@ $ cat logstash-tutorial.log
 
 Logstash에 데이터를 보내기 위해 **Filebeat** 오픈소스 사용
 
+filebeat는 log를 처리하는 것이다.
+
 설치
 
 > https://www.elastic.co/kr/downloads/beats/filebeat
@@ -116,8 +118,8 @@ Filebeat inputs에 인풋파일 설정(보낼 파일)
 filebeat.inputs:
 - type: log
   enabled: true
-	path:
-		- c:\ELK Stack\logstash-tutorial.log
+  path:
+    - c:\ELK Stack\logstash-tutorial.log
 ```
 - 경로는 절대경로로 하자.
 
@@ -126,7 +128,7 @@ filebeat.inputs:
 
 ```yaml
 output.logstash:
-	hosts: ["localhost:5044"]
+  hosts: ["localhost:5044"]
 ```
 - Filebeat는 포트 5044 사용
 - 주석만 지워주면 된다.
@@ -306,6 +308,8 @@ $ ./start.sh
 }
 ```
 
+
+> 다양한 필터들 : https://www.elastic.co/guide/en/logstash/current/filter-plugins.html
 
 ## Elasticsearch로 데이터 보내기
 
