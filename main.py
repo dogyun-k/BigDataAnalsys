@@ -1,4 +1,5 @@
 import csv
+from functools import total_ordering
 import requests, json
 import re
 
@@ -84,10 +85,10 @@ def remove_overlap(file_name):
     with open(file_name+'.txt', 'w', encoding='UTF-8') as f:
 
         for key, value in addresses.items():
-            
-            key = normalization(key)
+            if value >= 10:
+                key = normalization(key)
 
-            f.write(f"{key}\t{value}\n")
+                f.write(f"{key}\t{value}\n")
         
         f.close
 
@@ -148,11 +149,17 @@ def refactoring_file(file_name):
     reader = csv.reader(f)
 
     lists = []
+    cnt = 0
+    total = len(list(reader))
+
 
     for row in reader:
         row[addr] = normalization(row[addr])
+        
         lists.append(row)
     
+        print(f"\t{(cnt/total) * 100} %\t", end='\r')
+
     writer.writerows(lists)
         
 def check_ok(file_name):
@@ -160,6 +167,7 @@ def check_ok(file_name):
 
     f = open(file_name+'.txt', 'r', encoding='utf-8-sig')
     result = open(file_name+'_checked.csv', 'w', newline='', encoding='utf-8-sig')
+    final = open(file_name+'_final.csv', 'w', newline='', encoding='utf-8-sig')
 
     writer = csv.writer(result)
 
@@ -176,24 +184,53 @@ def check_ok(file_name):
 
         if response != False:
             if response != None:
-                ok_lists.append(['ok', addr, number])
+                ok_lists.append(['ok', addr, response[0], response[1], number])
             else:
                 no_lists.append(['no', addr, number])
         else:
             no_lists.append(addr)
 
-        print(f"\t{(cnt // 3884)*100} %\t\t", end='\r')
+        print(f"\t{cnt}..... {(cnt / 3884)*100} %\t\t", end='\r')
         cnt += 1
 
     writer.writerows(no_lists)
     
+def complete(file_name):
+    ### csv 파일 읽어서 주소 전처리 + 좌표값 입력
 
+    before_file = open(file_name+'.csv', 'r', encoding='utf-8-sig')
+    after_file = open(file_name+'_final.csv', 'w', newline='', encoding='utf-8-sig')
+    
+    reader = csv.reader(before_file)
+    writer = csv.writer(after_file)
+
+    lists = []
+    cnt = 0
+    total = 50732
+
+    for row in reader:
+        # print(row)
+        row[addr] = normalization(row[addr])
+        geo_point = get_geocode(row[addr])
+
+        if geo_point != None:
+            lists.append(row[1:4] + list(geo_point))
+            print(row[1:4] + list(geo_point))
+
+        print(f"{(cnt / total) * 100} %\t{cnt}\t", end='\r')
+        cnt += 1
+
+        if cnt % 1000 == 0:
+            writer.writerows(lists)
+            lists = []
+    
 
 if "__main__":
 
     remove_overlap('2021')
     # remove_overlap('illegal_park_info')
-    check_ok('2021')
-    # print(get_geocode("대구 북구 일중학교정문"))
+    # check_ok('2021')
+    # refactoring_file('2021')
+    complete('2021')
 
     pass
