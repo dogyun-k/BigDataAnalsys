@@ -117,8 +117,17 @@ def normalization(address):
 
     # 괄호와 포함된 단어 지우기
     address = re.sub(r'\([^)]*\)', '', address)
-    
     address = address.strip()
+
+    '''
+    splited_addr = address.split(" ")
+    if len(splited_addr)>1:
+        if splited_addr[1].endswith("로"):
+            del splited_addr[0]
+            address = " ".join(splited_addr)
+    '''
+
+    #return "대구 북구 " + address
 
     address = gil_to_doro(address)
 
