@@ -3,12 +3,15 @@ from functools import total_ordering
 import requests, json
 import re
 
+# Origin 파일 속성값
+# 설명 | 날짜 | 시간 | 장소 | 등록일 | 등록일
+#   0      1     2      3      4        5
 date = 1
 time = 2
 addr = 3
 
 def split_data_into_date(split_year):
-    ### 초기 데이터셋 (illegal_park_info.csv) 년도별로 파일 나눠서 저장.
+    """초기 데이터셋 (illegal_park_info.csv) 년도별로 파일 나눠서 저장."""
 
     with open('./illegal_park_info.csv', 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
@@ -23,7 +26,7 @@ def split_data_into_date(split_year):
                 writer.writerow(row)
 
 def get_geocode(address):
-    ### 네이버 API로 주소 -> 좌표 리턴
+    """네이버 API로 주소 -> 좌표 리턴"""
 
 
     url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?"
@@ -49,51 +52,38 @@ def get_geocode(address):
         # print("Error :", r.status_code)
         return False
 
-def get_geocode_kakao(address):
-    url = 'https://dapi.kakao.com/v2/local/search/address.json?'
-    header = {"Authorization": "KakaoAK 3b98ac35eab4cbb094706618f2d00049"}
-    
-    query = 'query=' + address
-
-    r = requests.get(url + query, headers=header)
-    result = r.json()
-
-    print(result)
-
 def remove_overlap(file_name):
-    ### 데이터셋에 중복되는 주소들 제거 후 주소만 txt로 저장
+    """origin 데이터셋에 중복되는 주소들 제거 후 주소만 txt로 저장"""
+
+    origin_file = open(file_name+'.csv', 'r', encoding='utf-8-sig')
+    result_file = open(file_name+'.txt', 'w', encoding='UTF-8')
+    reader = csv.reader(origin_file)
+    
     addresses = {}
-
-    with open(file_name+'.csv', 'r', encoding='UTF8') as cf:
-        
-        ill_park = csv.reader(cf)
-
-        for row in ill_park:
-            if not row[3] in addresses:
-                addresses[row[3]] = 1
-            else:
-                addresses[row[3]] += 1
-                # print(row[3])
-        
-        cf.close()
+    
+    for row in reader:
+        print(row)
+        if not row[addr] in addresses:
+            addresses[row[addr]] = 1
+        else:
+            addresses[row[addr]] += 1
+    
+    origin_file.close()
 
     addresses = dict(sorted(addresses.items(), key=lambda x: x[1], reverse=True))
 
     # print(addresses)
 
 
-    with open(file_name+'.txt', 'w', encoding='UTF-8') as f:
 
-        for key, value in addresses.items():
-            if value >= 10:
-                key = normalization(key)
+    for key, value in addresses.items():
+        if value >= 10:
+            key = normalization(key)
 
-                f.write(f"{key}\t{value}\n")
-        
-        f.close
+            result_file.write(f"{key}\t{value}\n")
 
 def normalization(address):
-    ### 검색 안되는 주소 전처리 ###
+    """검색 안되는 주소 전처리"""
 
     # 앞뒤 공백 지우기
     address = address.strip()
@@ -119,13 +109,6 @@ def normalization(address):
     address = re.sub(r'\([^)]*\)', '', address)
     address = address.strip()
 
-    '''
-    splited_addr = address.split(" ")
-    if len(splited_addr)>1:
-        if splited_addr[1].endswith("로"):
-            del splited_addr[0]
-            address = " ".join(splited_addr)
-    '''
 
     #return "대구 북구 " + address
 
@@ -147,36 +130,12 @@ def gil_to_doro(addr):
 
     # print(temp)
     return " ".join(temp)
-
-def refactoring_file(file_name):
-    ### 데이터셋 전처리 작업 후 저장
-
-    f = open(file_name+'.csv', 'r', encoding='utf-8')
-    new_f = open(file_name+'_refacted.csv', 'w', newline='', encoding='utf-8-sig')
-
-    writer = csv.writer(new_f)
-    reader = csv.reader(f)
-
-    lists = []
-    cnt = 0
-    total = len(list(reader))
-
-
-    for row in reader:
-        row[addr] = normalization(row[addr])
-        
-        lists.append(row)
-    
-        print(f"\t{(cnt/total) * 100} %\t", end='\r')
-
-    writer.writerows(lists)
-        
+       
 def check_ok(file_name):
     ### 검색 안 되는 주소 리스트 뽑기 ###
 
     f = open(file_name+'.txt', 'r', encoding='utf-8-sig')
     result = open(file_name+'_checked.csv', 'w', newline='', encoding='utf-8-sig')
-    final = open(file_name+'_final.csv', 'w', newline='', encoding='utf-8-sig')
 
     writer = csv.writer(result)
 
@@ -203,28 +162,39 @@ def check_ok(file_name):
         cnt += 1
 
     writer.writerows(no_lists)
+
+    f.close()
+    result.close()
     
 def complete(file_name):
-    ### csv 파일 읽어서 주소 전처리 + 좌표값 입력
-
-    before_file = open(file_name+'.csv', 'r', encoding='utf-8-sig')
-    after_file = open(file_name+'_final.csv', 'w', newline='', encoding='utf-8-sig')
+    """csv 파일 읽어서 주소 전처리 + 좌표값 입력"""
+    geo_file = open(file_name+'_geo.csv', 'r', encoding='utf-8-sig')
+    origin_file = open(file_name+'_origin.csv', 'r', encoding='utf-8-sig')
+    reulst_file = open(file_name+'.csv', 'w', newline='', encoding='utf-8-sig')
     
-    reader = csv.reader(before_file)
-    writer = csv.writer(after_file)
+    origin_reader = csv.reader(origin_file)
+    geo_reader = csv.reader(geo_file)
+    writer = csv.writer(reulst_file)
+
+
+    # 파일 불러와서 딕셔너리 저장해놓고 쓰는게 더 빠름. 딕셔너리 서치 O(1)
+    geo_dict = {}
+    for row in geo_reader:
+        geo_dict[row[0]] = [row[1], row[2]]
+
 
     lists = []
     cnt = 0
-    total = 50732
+    total = 49447
 
-    for row in reader:
+    for row in origin_reader:
         # print(row)
         row[addr] = normalization(row[addr])
-        geo_point = get_geocode(row[addr])
 
-        if geo_point != None:
-            lists.append(row[1:4] + list(geo_point))
-            print(row[1:4] + list(geo_point))
+        if row[addr] in geo_dict:
+            geo_point = geo_dict[row[addr]]
+            lists.append(row[1:4] + geo_point)
+            print(row[1:4] + geo_point)
 
         print(f"{(cnt / total) * 100} %\t{cnt}\t", end='\r')
         cnt += 1
@@ -233,13 +203,44 @@ def complete(file_name):
             writer.writerows(lists)
             lists = []
     
+    geo_file.close()
+    origin_file.close()
+    reulst_file.close()
+
+def make_geo_list_csv(file_name):
+
+    input_file = open(file_name+'.txt', 'r', encoding='utf-8')
+    output_file = open(file_name+'_geo.csv', 'w', newline='', encoding='utf-8-sig')
+
+    writer = csv.writer(output_file)
+
+    lists = []
+    cnt = 0
+    for row in input_file.readlines():
+        address = row.split('\t')[0]
+        geo_point = get_geocode(address)
+
+        if geo_point != None:
+            lists.append([address] + list(geo_point))
+        else:
+            print(address)
+
+        counting(cnt, 679)
+        cnt += 1 
+
+    writer.writerows(lists)
+
+    input_file.close()
+    output_file.close()
+
 
 if "__main__":
 
-    remove_overlap('2021')
-    # remove_overlap('illegal_park_info')
+
+
+    # remove_overlap('2021')
     # check_ok('2021')
-    # refactoring_file('2021')
-    complete('2021')
+    # make_geo_list_csv('2021')
+    # complete('2021')
 
     pass
